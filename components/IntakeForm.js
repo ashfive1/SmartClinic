@@ -203,6 +203,15 @@ const IntakeForm = () => {
           notes: patientData.notes || null,
         })
         if (recordError) throw recordError
+
+        // Trigger AI rating generation for this patient
+        try {
+          await fetch("/api/patients/rate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patientId: patientRecord.id, onlyMissing: true }),
+          })
+        } catch (_) {}
       }
 
       setMessage({ type: "success", text: "Patient intake record created successfully!" })

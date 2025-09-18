@@ -4,7 +4,7 @@ import { createClient as createSb } from "@supabase/supabase-js"
 const supabase = createSb(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 async function callLlmForRating(payload) {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     // Fallback heuristic if no key configured
     const latest = payload.latestRecord || {}
@@ -18,14 +18,14 @@ async function callLlmForRating(payload) {
 
   const system = `You are a clinical triage assistant. Classify patient risk into one of: low, medium, high, critical. Provide a concise 1-sentence clinical summary. Return strict JSON {"rating":"low|medium|high|critical","summary":"..."}.`
   const user = JSON.stringify(payload)
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -48,10 +48,10 @@ async function callLlmForRating(payload) {
 
 export async function POST(request) {
   try {
-    const { onlyMissing = true, limit = 50 } = await request.json().catch(() => ({}))
+    const { onlyMissing = true, limit = 50, patientId = null } = await request.json().catch(() => ({}))
 
     // Load patients with latest record and existing ratings
-    const { data: patients, error } = await supabase
+    let query = supabase
       .from("patients")
       .select(
         `id, patient_id, first_name, last_name, date_of_birth, gender,
@@ -59,7 +59,14 @@ export async function POST(request) {
          patient_records (id, created_at, risk_level, chief_complaint, systolic_bp, diastolic_bp, heart_rate, temperature, oxygen_saturation, respiratory_rate, pain_scale, consciousness_level)`
       )
       .order("created_at", { ascending: false })
-      .limit(limit)
+
+    if (patientId) {
+      query = query.eq("id", patientId)
+    } else {
+      query = query.limit(limit)
+    }
+
+    const { data: patients, error } = await query
 
     if (error) throw error
 

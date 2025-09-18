@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 export async function POST(request) {
   try {
     const { messages = [], patient = null } = await request.json()
-    const apiKey = process.env.OPENAI_API_KEY
+    const apiKey = process.env.GROQ_API_KEY
 
     const system = `You are an assistant for clinicians. When a patient object is provided, tailor answers using those details. Be concise, cite vitals where helpful, and avoid providing diagnosis. If unsure, suggest next steps. Do not include PHI beyond what is provided in the prompt.`
 
@@ -21,14 +21,14 @@ export async function POST(request) {
       ...messages,
     ]
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        model: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
         messages: payloadMsgs,
         temperature: 0.2,
       }),

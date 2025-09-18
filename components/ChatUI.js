@@ -95,6 +95,19 @@ const ChatUI = () => {
         patient = data[0]
       }
 
+      // Fetch latest rating/review for better LLM context
+      if (!USE_MOCK_DATA) {
+        const { data: ratingsData } = await supabase
+          .from("patient_ratings")
+          .select("rating, summary, created_at")
+          .eq("patient_id", patient.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+        if (ratingsData && ratingsData.length > 0) {
+          patient = { ...patient, patient_ratings: ratingsData }
+        }
+      }
+
       setPatientData(patient)
 
       // Generate AI recommendations
