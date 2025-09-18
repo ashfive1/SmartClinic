@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import "../globals.css"
 import "./styles.css"
 
+
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
@@ -47,18 +48,37 @@ export default function AuthPage() {
     setError("")
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
+      // Fetch account by email only
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("*")
+        .eq("email", formData.email)
+        .eq("is_active", true)
+        .single()
 
-      if (error) throw error
-
-      if (data.user) {
-        router.push("/dashboard")
+      if (error || !data) {
+        setError("Invalid email or password")
+        setIsLoading(false)
+        return
       }
+
+      // Compare password in JS
+      if (data.password_hash !== formData.password) {
+        setError("Invalid email or password")
+        setIsLoading(false)
+        return
+      }
+
+      // Success: redirect
+      localStorage.setItem("auth_email", formData.email);
+      alert("Login successful! Redirecting to dashboard...");
+      console.log("Redirecting to /dashboard")
+      router.push("/dashboard")
+      setTimeout(() => {
+        window.location.href = "/dashboard"
+      }, 100)
     } catch (error) {
-      setError(error.message)
+      setError(error.message || "Login failed")
     } finally {
       setIsLoading(false)
     }
@@ -71,24 +91,26 @@ export default function AuthPage() {
     setSuccess("")
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
+      // Store password as plain string in password_hash
+      const { data, error } = await supabase
+        .from("accounts")
+        .insert([
+          {
+            email: formData.email,
+            password_hash: formData.password,
             full_name: formData.fullName,
             role: formData.role,
+            is_active: true,
           },
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-        },
-      })
+        ])
+        .single()
 
       if (error) throw error
 
-      if (data.user) {
-        setSuccess("Account created successfully! Please check your email to verify your account.")
-      }
+      setSuccess("Account created successfully! You can now sign in.")
+      setIsSignUp(false)
     } catch (error) {
+      // If you see a row-level security error, check your Supabase RLS policies for the 'accounts' table.
       setError(error.message)
     } finally {
       setIsLoading(false)
@@ -143,3 +165,4 @@ export default function AuthPage() {
     </div>
   )
 }
+

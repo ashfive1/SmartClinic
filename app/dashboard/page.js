@@ -7,7 +7,7 @@ import { USE_MOCK_DATA, MockData } from "@/lib/utils"
 import "@/styles/dashboard.css"
 
 export default function DashboardPage() {
-  const { profile, loading, isDoctor } = useAuth()
+  const { profile, loading } = useAuth()
   const [stats, setStats] = useState({
     totalPatients: 0,
     todayIntakes: 0,
@@ -57,11 +57,11 @@ export default function DashboardPage() {
         .gte("created_at", `${today}T00:00:00`)
         .lt("created_at", `${today}T23:59:59`)
 
-      // Get critical patients count
+      // Get critical patients count from patient_ratings (rating = 'red')
       const { count: criticalPatients } = await supabase
-        .from("patient_records")
+        .from("patient_ratings")
         .select("*", { count: "exact", head: true })
-        .in("risk_level", ["high", "critical"])
+        .eq("rating", "red")
 
       // Get recent records with patient info
       const { data: recentRecords } = await supabase
@@ -125,12 +125,23 @@ export default function DashboardPage() {
     )
   }
 
+  // Replace isDoctor logic with direct role check
+  const isDoctor = profile?.role === "doctor"
+  const isNurse = profile?.role === "nurse"
+  const isAdmin = profile?.role === "admin"
+
   return (
     <div className="dashboard-content">
       <div className="dashboard-header">
         <h1 className="dashboard-title">Welcome back, {profile?.full_name}</h1>
         <p className="dashboard-subtitle">
-          {isDoctor ? "Doctor Dashboard - Full Access" : "Nurse Dashboard - View Only"}
+          {isDoctor
+            ? "Doctor Dashboard - Full Access"
+            : isNurse
+            ? "Nurse Dashboard - View Only"
+            : isAdmin
+            ? "Admin Dashboard"
+            : "Unknown Role"}
         </p>
       </div>
 
@@ -284,17 +295,30 @@ export default function DashboardPage() {
                 style={{
                   display: "inline-block",
                   padding: "0.25rem 0.75rem",
-                  backgroundColor: isDoctor ? "var(--success-color)" : "var(--primary-color)",
+                  backgroundColor:
+                    isDoctor
+                      ? "var(--success-color)"
+                      : isNurse
+                      ? "var(--primary-color)"
+                      : isAdmin
+                      ? "#6366f1"
+                      : "#6b7280",
                   color: "white",
                   borderRadius: "9999px",
                   fontSize: "0.875rem",
                   textTransform: "capitalize",
                 }}
               >
-                {profile?.role}
+                {profile?.role || "unknown"}
               </div>
               <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
-                {isDoctor ? "Full system access" : "Read-only access"}
+                {isDoctor
+                  ? "Full system access"
+                  : isNurse
+                  ? "Read-only access"
+                  : isAdmin
+                  ? "Admin access"
+                  : "Unknown role: check your account settings."}
               </div>
             </div>
           </div>

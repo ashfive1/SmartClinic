@@ -22,11 +22,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (USE_MOCK_DATA) {
-      // Provide a mock authenticated user and profile immediately
-      const mockUser = { id: "mock-user" }
-      const mockProfile = { id: "mock-user", full_name: "Demo User", role: "doctor" }
-      setUser(mockUser)
-      setProfile(mockProfile)
+      // Always forget session on reload in mock mode
+      setUser(null)
+      setProfile(null)
       setLoading(false)
       return
     }
@@ -62,17 +60,46 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId) => {
+  // Fetch profile from accounts table by email (from localStorage)
+  const fetchProfile = async (email) => {
     try {
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("*")
+        .eq("email", email)
+        .eq("is_active", true)
+        .single()
 
       if (error) throw error
-      setProfile(data)
+      setProfile({
+        id: data.account_id,
+        full_name: data.full_name,
+        email: data.email,
+        role: data.role,
+      })
     } catch (error) {
       console.error("Error fetching profile:", error)
       setProfile(null)
     }
   }
+
+  useEffect(() => {
+    if (USE_MOCK_DATA) {
+      // Always forget session on reload in mock mode
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+      return
+    }
+    // Get initial profile from localStorage (set by login)
+    const email = typeof window !== "undefined" ? localStorage.getItem("auth_email") : null;
+    if (email) {
+      fetchProfile(email);
+    } else {
+      setProfile(null);
+    }
+    setLoading(false);
+  }, [])
 
   const signOut = async () => {
     if (USE_MOCK_DATA) {

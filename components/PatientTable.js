@@ -45,33 +45,45 @@ const PatientTable = () => {
       } else {
         const { data, error } = await supabase
           .from("patients")
-          .select(
-            `
-            *,
+          .select(`
+            id, first_name, last_name, gender, phone, email, date_of_birth, created_at,
+            patient_ratings (rating, summary, created_at),
             patient_records (
-              id,
-              created_at,
-              risk_level,
-              chief_complaint,
-              systolic_bp,
-              diastolic_bp,
-              heart_rate,
-              temperature,
-              oxygen_saturation
+              id, created_at, risk_level, chief_complaint, systolic_bp, diastolic_bp, heart_rate, temperature, oxygen_saturation
             )
-          `,
-          )
+          `)
           .order(sortField, { ascending: sortDirection === "asc" })
         if (error) throw error
         rows = data
       }
 
+      // Helper: get latest rating and summary
+      function getLatestRating(ratings) {
+        if (!ratings || ratings.length === 0) return { rating: "-", summary: "-" }
+        const sorted = ratings.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        return { rating: sorted[0].rating, summary: sorted[0].summary }
+      }
+
+      // Placeholder: model-based rating generation (to be replaced with real model call)
+      function generateRatingFromData(patient) {
+        // Example: if any record is critical, return red; if high, orange; else green
+        if (patient.patient_records?.some(r => r.risk_level === "critical")) return "red"
+        if (patient.patient_records?.some(r => r.risk_level === "high")) return "orange"
+        return "green"
+      }
+
       const processedPatients = rows.map((patient) => {
         const latestRecord = patient.patient_records?.[0]
+        const { rating, summary } = getLatestRating(patient.patient_ratings)
+        // If no rating, generate one (simulate model)
+        const displayRating = rating === "-" ? generateRatingFromData(patient) : rating
         return {
           ...patient,
+          name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
           latestRecord,
           recordsCount: patient.patient_records?.length || 0,
+          displayRating,
+          summary: summary === "-" ? (latestRecord?.chief_complaint || "-") : summary,
         }
       })
 
@@ -277,43 +289,14 @@ const PatientTable = () => {
                   style={{ margin: 0 }}
                 />
               </th>
-              <th
-                style={{
-                  padding: "0.75rem",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-                onClick={() => handleSort("patient_id")}
-              >
-                Patient ID {sortField === "patient_id" && (sortDirection === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                style={{
-                  padding: "0.75rem",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-                onClick={() => handleSort("first_name")}
-              >
-                Name {sortField === "first_name" && (sortDirection === "asc" ? "↑" : "↓")}
-              </th>
-              <th style={{ padding: "0.75rem", textAlign: "left" }}>Contact</th>
-              <th style={{ padding: "0.75rem", textAlign: "left" }}>Records</th>
-              <th style={{ padding: "0.75rem", textAlign: "left" }}>Latest Risk</th>
-              <th style={{ padding: "0.75rem", textAlign: "left" }}>Latest Vitals</th>
-              <th
-                style={{
-                  padding: "0.75rem",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-                onClick={() => handleSort("created_at")}
-              >
-                Created {sortField === "created_at" && (sortDirection === "asc" ? "↑" : "↓")}
-              </th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}></th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Name</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Gender</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Phone</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Email</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>DOB</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Summary</th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Rating</th>
             </tr>
           </thead>
           <tbody>
@@ -340,72 +323,41 @@ const PatientTable = () => {
                       style={{ margin: 0 }}
                     />
                   </td>
-                  <td style={{ padding: "0.75rem", fontWeight: "500" }}>{patient.patient_id}</td>
                   <td style={{ padding: "0.75rem" }}>
-                    <div>
-                      <div style={{ fontWeight: "500" }}>
-                        {patient.first_name} {patient.last_name}
-                      </div>
-                      {patient.date_of_birth && (
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                          DOB: {formatDate(patient.date_of_birth)}
-                        </div>
-                      )}
-                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedPatients.includes(patient.id)}
+                      onChange={() => handleSelectPatient(patient.id)}
+                      style={{ margin: 0 }}
+                    />
                   </td>
+                  <td style={{ padding: "0.75rem", fontWeight: "500" }}>{patient.name}</td>
+                  <td style={{ padding: "0.75rem" }}>{patient.gender || "-"}</td>
+                  <td style={{ padding: "0.75rem" }}>{patient.phone || "-"}</td>
+                  <td style={{ padding: "0.75rem" }}>{patient.email || "-"}</td>
+                  <td style={{ padding: "0.75rem" }}>{patient.date_of_birth ? formatDate(patient.date_of_birth) : "-"}</td>
+                  <td style={{ padding: "0.75rem", fontSize: "0.95em" }}>{patient.summary || "-"}</td>
                   <td style={{ padding: "0.75rem" }}>
-                    <div style={{ fontSize: "0.875rem" }}>
-                      {patient.phone && <div>{patient.phone}</div>}
-                      {patient.email && (
-                        <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>{patient.email}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ padding: "0.75rem" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontWeight: "500", fontSize: "1.125rem" }}>{patient.recordsCount}</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>records</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "0.75rem" }}>
-                    {patient.latestRecord?.risk_level ? (
-                      <span
-                        style={{
-                          padding: "0.25rem 0.75rem",
-                          borderRadius: "9999px",
-                          fontSize: "0.75rem",
-                          fontWeight: "500",
-                          backgroundColor: getRiskLevelColor(patient.latestRecord.risk_level),
-                          color: "white",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {patient.latestRecord.risk_level}
-                      </span>
-                    ) : (
-                      <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>No records</span>
-                    )}
-                  </td>
-                  <td style={{ padding: "0.75rem" }}>
-                    {patient.latestRecord ? (
-                      <div style={{ fontSize: "0.75rem" }}>
-                        {patient.latestRecord.systolic_bp && (
-                          <div>
-                            BP: {patient.latestRecord.systolic_bp}/{patient.latestRecord.diastolic_bp}
-                          </div>
-                        )}
-                        {patient.latestRecord.heart_rate && <div>HR: {patient.latestRecord.heart_rate}</div>}
-                        {patient.latestRecord.temperature && <div>Temp: {patient.latestRecord.temperature}°F</div>}
-                        {patient.latestRecord.oxygen_saturation && (
-                          <div>O2: {patient.latestRecord.oxygen_saturation}%</div>
-                        )}
-                      </div>
-                    ) : (
-                      <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>No vitals</span>
-                    )}
-                  </td>
-                  <td style={{ padding: "0.75rem", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-                    {formatDate(patient.created_at)}
+                    <span
+                      style={{
+                        padding: "0.25rem 0.75rem",
+                        borderRadius: "9999px",
+                        fontSize: "0.85rem",
+                        fontWeight: "500",
+                        backgroundColor:
+                          patient.displayRating === "red"
+                            ? "#dc2626"
+                            : patient.displayRating === "orange"
+                            ? "#ea580c"
+                            : patient.displayRating === "green"
+                            ? "#059669"
+                            : "#6b7280",
+                        color: "white",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {patient.displayRating}
+                    </span>
                   </td>
                 </tr>
               ))

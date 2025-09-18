@@ -55,9 +55,10 @@ export async function middleware(request) {
   } = await supabase.auth.getUser()
 
   // Redirect to auth if not authenticated and trying to access protected routes
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/auth", request.url))
-  }
+  // DISABLED: Supabase Auth not used for this app
+  // if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  //   return NextResponse.redirect(new URL("/auth", request.url))
+  // }
 
   // Redirect to dashboard if authenticated and trying to access auth page
   if (user && request.nextUrl.pathname === "/auth") {

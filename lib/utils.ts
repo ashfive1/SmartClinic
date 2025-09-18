@@ -5,8 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Mock mode flag. Set to true to use frontend-only mock data across the app.
-export const USE_MOCK_DATA = true
+// Mock mode flag. Set to false to use Supabase data across the app.
+export const USE_MOCK_DATA = false
 
 export function downloadBlobAsFile(blob: Blob, filename: string) {
   const url = window.URL.createObjectURL(blob)

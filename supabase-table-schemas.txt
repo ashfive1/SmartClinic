@@ -1,0 +1,114 @@
+# --- accounts ---
+create table public.accounts (
+  account_id uuid not null default gen_random_uuid (),
+  full_name character varying(100) not null,
+  email character varying(150) not null,
+  password_hash text not null,
+  role character varying(20) not null,
+  created_at timestamp without time zone null default now(),
+  is_active boolean null default true,
+  constraint accounts_pkey primary key (email),
+  constraint accounts_email_key unique (email),
+  constraint accounts_role_check check (
+    (
+      (role)::text = any (
+        (
+          array[
+            'doctor'::character varying,
+            'nurse'::character varying,
+            'admin'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+# --- chronic_conditions ---
+create table public.accounts (
+  account_id uuid not null default gen_random_uuid (),
+  full_name character varying(100) not null,
+  email character varying(150) not null,
+  password_hash text not null,
+  role character varying(20) not null,
+  created_at timestamp without time zone null default now(),
+  is_active boolean null default true,
+  constraint accounts_pkey primary key (email),
+  constraint accounts_email_key unique (email),
+  constraint accounts_role_check check (
+    (
+      (role)::text = any (
+        (
+          array[
+            'doctor'::character varying,
+            'nurse'::character varying,
+            'admin'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+# --- health_metrics ---
+create table public.accounts (
+  account_id uuid not null default gen_random_uuid (),
+  full_name character varying(100) not null,
+  email character varying(150) not null,
+  password_hash text not null,
+  role character varying(20) not null,
+  created_at timestamp without time zone null default now(),
+  is_active boolean null default true,
+  constraint accounts_pkey primary key (email),
+  constraint accounts_email_key unique (email),
+  constraint accounts_role_check check (
+    (
+      (role)::text = any (
+        (
+          array[
+            'doctor'::character varying,
+            'nurse'::character varying,
+            'admin'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+# --- lifestyle_factors ---
+create table public.lifestyle_factors (
+  id uuid not null default gen_random_uuid (),
+  patient_id uuid null,
+  smoking_status text null,
+  alcohol_consumption text null,
+  physical_activity text null,
+  diet_quality text null,
+  sleep_disorder text null,
+  created_at timestamp with time zone null default now(),
+  constraint lifestyle_factors_pkey primary key (id),
+  constraint lifestyle_factors_patient_id_fkey foreign KEY (patient_id) references patients (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+# --- patients --- 
+create table public.patients (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  dob date null,
+  gender text null,
+  age integer null,
+  bmi numeric null,
+  cholesterol_level numeric null,
+  hypertension boolean null,
+  diabetes boolean null,
+  heart_disease boolean null,
+  stroke boolean null,
+  kidney_disease boolean null,
+  lung_disease boolean null,
+  cancer boolean null,
+  family_history text null,
+  mental_health_issues text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint patients_pkey primary key (id)
+) TABLESPACE pg_default;
