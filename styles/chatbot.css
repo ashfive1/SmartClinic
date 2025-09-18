@@ -1,0 +1,205 @@
+.chatbot-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+  max-height: 800px;
+}
+
+.chatbot-search {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--accent-soft-border);
+  box-shadow: 0 10px 25px var(--accent-shadow);
+}
+
+.chatbot-search-form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.chatbot-search-input {
+  flex: 1;
+}
+
+.chatbot-search-button {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  white-space: nowrap;
+}
+
+.chatbot-results {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--accent-soft-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px var(--accent-shadow);
+}
+
+.chatbot-results-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem 1rem;
+}
+
+.patient-summary {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border-radius: var(--radius);
+  border-left: 4px solid var(--primary-color);
+  border: 1px solid var(--accent-soft-border);
+  box-shadow: 0 8px 20px var(--accent-shadow);
+}
+
+.patient-summary-header {
+  display: flex;
+  justify-content: between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.patient-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.patient-id {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.download-button {
+  background: var(--success-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.recommendations {
+  margin-top: 2rem;
+}
+
+.recommendations-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.recommendation-card {
+  background: var(--card);
+  border: 1px solid var(--accent-soft-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s ease;
+  box-shadow: 0 8px 20px var(--accent-shadow);
+}
+
+.recommendation-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.recommendation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.recommendation-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recommendation-priority {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.priority-high {
+  background: #fef2f2;
+  color: var(--danger-color);
+}
+
+.priority-medium {
+  background: #fef3c7;
+  color: var(--warning-color);
+}
+
+.priority-low {
+  background: #f0fdf4;
+  color: var(--success-color);
+}
+
+.recommendation-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.evidence-toggle {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.evidence-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.evidence-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--primary-color);
+}
+
+.evidence-list {
+  list-style: none;
+}
+
+.evidence-item {
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.evidence-item::before {
+  content: "•";
+  color: var(--primary-color);
+  position: absolute;
+  left: 0;
+}
+
+@media (max-width: 768px) {
+  .chatbot-search-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .patient-summary-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .recommendation-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
