@@ -18,13 +18,13 @@ const Sidebar = () => {
       name: "Home",
       href: "/dashboard",
       iconClass: "fi fi-rr-home",
-      allowedRoles: ["doctor", "nurse"],
+      allowedRoles: ["doctor", "nurse", "admin"],
     },
     {
       name: "Patient Records", // Added patient records navigation
       href: "/dashboard/patients",
       iconClass: "fi fi-rr-folders",
-      allowedRoles: ["doctor", "nurse"],
+      allowedRoles: ["doctor", "nurse", "admin"],
     },
     {
       name: "Patient Intake",
@@ -36,7 +36,7 @@ const Sidebar = () => {
       name: "Chatbot",
       href: "/dashboard/chatbot",
       iconClass: "fi fi-rr-comments",
-      allowedRoles: ["doctor", "nurse"],
+      allowedRoles: ["doctor", "nurse", "admin"],
     },
   ]
 

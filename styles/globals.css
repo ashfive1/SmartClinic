@@ -121,5 +121,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, 'Liberation Sans', 'sans-serif';
+    font-feature-settings: "ss01" on, "ss02" on, "cv01" on, "cv02" on;
+    font-smooth: always;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

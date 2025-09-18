@@ -8,6 +8,9 @@ import { useAuth } from "@/hooks/useAuth"
 const PatientTable = () => {
   const { profile } = useAuth()
   const supabase = USE_MOCK_DATA ? null : createClient()
+  const isAdmin = profile?.role === "admin"
+  const [editPatientId, setEditPatientId] = useState(null)
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', phone: '' })
 
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -220,6 +223,38 @@ const PatientTable = () => {
     )
   }
 
+  const handleEditClick = (patient) => {
+    setEditPatientId(patient.id)
+    setEditForm({
+      first_name: patient.first_name || '',
+      last_name: patient.last_name || '',
+      phone: patient.phone || '',
+    })
+  }
+
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value })
+  }
+
+  const handleEditSave = async (patient) => {
+    if (USE_MOCK_DATA) {
+      // Update local mock data (not persistent)
+      setPatients((prev) => prev.map((p) => p.id === patient.id ? { ...p, ...editForm, name: `${editForm.first_name} ${editForm.last_name}` } : p))
+      setEditPatientId(null)
+      return
+    }
+    const { error } = await supabase
+      .from('patients')
+      .update({ first_name: editForm.first_name, last_name: editForm.last_name, phone: editForm.phone })
+      .eq('id', patient.id)
+    if (!error) {
+      setPatients((prev) => prev.map((p) => p.id === patient.id ? { ...p, ...editForm, name: `${editForm.first_name} ${editForm.last_name}` } : p))
+      setEditPatientId(null)
+    } else {
+      alert('Failed to update patient')
+    }
+  }
+
   return (
     <div>
       {/* Search and Actions */}
@@ -290,7 +325,7 @@ const PatientTable = () => {
               <th style={{ padding: "0.75rem", textAlign: "left" }}>
                 <input
                   type="checkbox"
-                  checked={selectedPatients.length === filteredPatients.length && filteredPatients.length > 0}
+                  checked={currentPatients.length > 0 && currentPatients.every((p) => selectedPatients.includes(p.id))}
                   onChange={handleSelectAll}
                   style={{ margin: 0 }}
                 />
@@ -306,63 +341,95 @@ const PatientTable = () => {
             </tr>
           </thead>
           <tbody>
-            {currentPatients.length === 0 ? (
-              <tr>
-                <td colSpan="8" style={{ padding: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
-                  {searchTerm ? "No patients found matching your search" : "No patients found"}
+            {currentPatients.map((patient) => (
+              <tr
+                key={patient.id}
+                style={{
+                  borderBottom: "1px solid var(--border)",
+                  backgroundColor: selectedPatients.includes(patient.id) ? "var(--surface)" : "transparent",
+                }}
+              >
+                <td style={{ padding: "0.75rem" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedPatients.includes(patient.id)}
+                    onChange={() => handleSelectPatient(patient.id)}
+                    style={{ margin: 0 }}
+                  />
+                </td>
+                <td style={{ padding: "0.75rem", color: "var(--text-secondary)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
+                  {patient.patient_id || "-"}
+                </td>
+                <td style={{ padding: "0.75rem", fontWeight: "500" }}>
+                  {editPatientId === patient.id ? (
+                    <>
+                      <input
+                        name="first_name"
+                        value={editForm.first_name}
+                        onChange={handleEditChange}
+                        style={{ width: 80, marginRight: 4 }}
+                      />
+                      <input
+                        name="last_name"
+                        value={editForm.last_name}
+                        onChange={handleEditChange}
+                        style={{ width: 80 }}
+                      />
+                    </>
+                  ) : (
+                    patient.name
+                  )}
+                </td>
+                <td style={{ padding: "0.75rem" }}>{patient.gender || "-"}</td>
+                <td style={{ padding: "0.75rem" }}>
+                  {editPatientId === patient.id ? (
+                    <input
+                      name="phone"
+                      value={editForm.phone}
+                      onChange={handleEditChange}
+                      style={{ width: 110 }}
+                    />
+                  ) : (
+                    patient.phone || "-"
+                  )}
+                </td>
+                <td style={{ padding: "0.75rem" }}>{patient.email || "-"}</td>
+                <td style={{ padding: "0.75rem" }}>{patient.date_of_birth ? formatDate(patient.date_of_birth) : "-"}</td>
+                <td style={{ padding: "0.75rem", fontSize: "0.95em" }}>{patient.summary || "-"}</td>
+                <td style={{ padding: "0.75rem", display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      borderRadius: "9999px",
+                      fontSize: "0.85rem",
+                      fontWeight: "500",
+                      backgroundColor:
+                        patient.displayRating === "red"
+                          ? "#dc2626"
+                          : patient.displayRating === "orange"
+                          ? "#ea580c"
+                          : patient.displayRating === "green"
+                          ? "#059669"
+                          : "#6b7280",
+                      color: "white",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {patient.displayRating}
+                  </span>
+                  {isAdmin && (
+                    editPatientId === patient.id ? (
+                      <>
+                        <button className="btn-primary" style={{ marginLeft: 4 }} onClick={() => handleEditSave(patient)}>Save</button>
+                        <button className="btn-secondary" style={{ marginLeft: 4 }} onClick={() => setEditPatientId(null)}>Cancel</button>
+                      </>
+                    ) : (
+                      <button className="btn-secondary" style={{ marginLeft: 4 }} onClick={() => handleEditClick(patient)}>Edit</button>
+                    )
+                  )}
                 </td>
               </tr>
-            ) : (
-              currentPatients.map((patient) => (
-                <tr
-                  key={patient.id}
-                  style={{
-                    borderBottom: "1px solid var(--border)",
-                    backgroundColor: selectedPatients.includes(patient.id) ? "var(--surface)" : "transparent",
-                  }}
-                >
-                  <td style={{ padding: "0.75rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedPatients.includes(patient.id)}
-                      onChange={() => handleSelectPatient(patient.id)}
-                      style={{ margin: 0 }}
-                    />
-                  </td>
-                  <td style={{ padding: "0.75rem", color: "var(--text-secondary)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
-                    {patient.patient_id || "-"}
-                  </td>
-                  <td style={{ padding: "0.75rem", fontWeight: "500" }}>{patient.name}</td>
-                  <td style={{ padding: "0.75rem" }}>{patient.gender || "-"}</td>
-                  <td style={{ padding: "0.75rem" }}>{patient.phone || "-"}</td>
-                  <td style={{ padding: "0.75rem" }}>{patient.email || "-"}</td>
-                  <td style={{ padding: "0.75rem" }}>{patient.date_of_birth ? formatDate(patient.date_of_birth) : "-"}</td>
-                  <td style={{ padding: "0.75rem", fontSize: "0.95em" }}>{patient.summary || "-"}</td>
-                  <td style={{ padding: "0.75rem" }}>
-                    <span
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        borderRadius: "9999px",
-                        fontSize: "0.85rem",
-                        fontWeight: "500",
-                        backgroundColor:
-                          patient.displayRating === "red"
-                            ? "#dc2626"
-                            : patient.displayRating === "orange"
-                            ? "#ea580c"
-                            : patient.displayRating === "green"
-                            ? "#059669"
-                            : "#6b7280",
-                        color: "white",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {patient.displayRating}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
