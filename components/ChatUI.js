@@ -255,7 +255,7 @@ const ChatUI = () => {
 
     try {
       if (!USE_MOCK_DATA) {
-        const response = await fetch("/api/predict", {
+        const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

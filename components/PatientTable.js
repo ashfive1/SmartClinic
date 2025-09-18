@@ -46,7 +46,7 @@ const PatientTable = () => {
         const { data, error } = await supabase
           .from("patients")
           .select(`
-            id, first_name, last_name, gender, phone, email, date_of_birth, created_at,
+            id, patient_id, first_name, last_name, gender, phone, email, date_of_birth, created_at,
             patient_ratings (rating, summary, created_at),
             patient_records (
               id, created_at, risk_level, chief_complaint, systolic_bp, diastolic_bp, heart_rate, temperature, oxygen_saturation
@@ -161,13 +161,19 @@ const PatientTable = () => {
     }
   }
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.patient_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredPatients = patients.filter((patient) => {
+    const query = (searchTerm || "").toLowerCase()
+    const pid = ((patient.patient_id ?? patient.id) || "").toLowerCase()
+    const first = (patient.first_name || "").toLowerCase()
+    const last = (patient.last_name || "").toLowerCase()
+    const email = (patient.email || "").toLowerCase()
+    return (
+      pid.includes(query) ||
+      first.includes(query) ||
+      last.includes(query) ||
+      email.includes(query)
+    )
+  })
 
   // Pagination
   const indexOfLastPatient = currentPage * patientsPerPage
@@ -289,7 +295,7 @@ const PatientTable = () => {
                   style={{ margin: 0 }}
                 />
               </th>
-              <th style={{ padding: "0.75rem", textAlign: "left" }}></th>
+              <th style={{ padding: "0.75rem", textAlign: "left" }}>Patient ID</th>
               <th style={{ padding: "0.75rem", textAlign: "left" }}>Name</th>
               <th style={{ padding: "0.75rem", textAlign: "left" }}>Gender</th>
               <th style={{ padding: "0.75rem", textAlign: "left" }}>Phone</th>
@@ -323,13 +329,8 @@ const PatientTable = () => {
                       style={{ margin: 0 }}
                     />
                   </td>
-                  <td style={{ padding: "0.75rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedPatients.includes(patient.id)}
-                      onChange={() => handleSelectPatient(patient.id)}
-                      style={{ margin: 0 }}
-                    />
+                  <td style={{ padding: "0.75rem", color: "var(--text-secondary)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
+                    {patient.patient_id || "-"}
                   </td>
                   <td style={{ padding: "0.75rem", fontWeight: "500" }}>{patient.name}</td>
                   <td style={{ padding: "0.75rem" }}>{patient.gender || "-"}</td>
