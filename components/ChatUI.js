@@ -16,8 +16,12 @@ const ChatUI = () => {
   const [recommendations, setRecommendations] = useState([])
   const [expandedEvidence, setExpandedEvidence] = useState({})
   const [error, setError] = useState("")
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState([
+    { role: "system", content: "You are a helpful medical assistant." }
+  ])
   const [chatInput, setChatInput] = useState("")
+  const [isSending, setIsSending] = useState(false)
+  // Image upload removed: only text queries supported
 
   const handleSearch = async (e) => {
     e.preventDefault()
@@ -258,46 +262,59 @@ const ChatUI = () => {
     })
   }
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file')
+        return
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image size should be less than 10MB')
+        return
+      }
+      
+      setSelectedImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => setImagePreview(e.target.result)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+  }
+
   const handleSendMessage = async (e) => {
     e?.preventDefault?.()
     const content = chatInput.trim()
     if (!content) return
-    const userMsg = { role: "user", content }
-    setMessages((prev) => [...prev, userMsg])
+    setIsSending(true)
+    const newMessages = [...messages, { role: "user", content }]
+    setMessages(newMessages)
     setChatInput("")
-
     try {
-      if (!USE_MOCK_DATA) {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [...messages, userMsg],
-            patient: patientData || null,
-          }),
-        })
-        if (response.ok) {
-          const data = await response.json()
-          const assistantMsg = { role: "assistant", content: data.reply || "" }
-          setMessages((prev) => [...prev, assistantMsg])
-          return
-        }
+      // If patientData is available, send it to the API so the model can use medical history
+      const response = await fetch("/api/openrouter-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages, patient: patientData }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.content) {
+        throw new Error(data.error || "Failed to get response from AI")
       }
-
-      // Mock reply if backend is unavailable or mock mode on
-      const mockReplyParts = []
-      mockReplyParts.push("Thanks for your message. This is a demo reply.")
-      if (patientData) {
-        mockReplyParts.push(
-          `Patient ${patientData.first_name} ${patientData.last_name} (${patientData.patient_id}). Latest risk: ${patientData.patient_records?.[0]?.risk_level ?? "n/a"}.`,
-        )
-      }
-      mockReplyParts.push("When the backend is connected, this will stream AI responses.")
-      const assistantMsg = { role: "assistant", content: mockReplyParts.join(" ") }
-      setMessages((prev) => [...prev, assistantMsg])
+      setMessages([...newMessages, { role: "assistant", content: data.content }])
     } catch (err) {
-      console.error("Chat error", err)
+      setMessages([...newMessages, { role: "assistant", content: `Sorry, I couldn't get a response from the AI. ${err.message}` }])
     }
+    setIsSending(false)
   }
 
   return (
@@ -447,20 +464,45 @@ const ChatUI = () => {
                   ) : (
                     messages.map((m, i) => (
                       <div key={i} style={{ marginBottom: "0.5rem" }}>
-                        <strong>{m.role === "user" ? "You" : "Assistant"}:</strong> {m.content}
+                        <strong>{m.role === "user" ? "You" : "Assistant"}:</strong>
+                        {m.image && (
+                          <div style={{ margin: "0.5rem 0" }}>
+                            <img 
+                              src={m.image} 
+                              alt="Uploaded medical image" 
+                              style={{ 
+                                maxWidth: "200px", 
+                                maxHeight: "200px", 
+                                borderRadius: "8px",
+                                border: "1px solid var(--border)"
+                              }} 
+                            />
+                          </div>
+                        )}
+                        <div>{m.content}</div>
                       </div>
                     ))
                   )}
                 </div>
-                <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "0.5rem" }}>
-                  <input
-                    className="form-input"
-                    placeholder={patientData ? `Ask about ${patientData.first_name}…` : "Ask a medical question…"}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                  />
-                  <button type="submit" className="btn-primary">Send</button>
-                </form>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "0.5rem" }}>
+                    <input
+                      className="form-input"
+                      placeholder={patientData ? `Ask about ${patientData.first_name}…` : "Ask a medical question…"}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      disabled={isSending}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage(e)}
+                    />
+                    <button 
+                      type="submit" 
+                      className="btn-primary" 
+                      disabled={isSending || !chatInput.trim()}
+                    >
+                      {isSending ? "Sending..." : "Send"}
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </>
