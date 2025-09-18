@@ -20,11 +20,7 @@ export async function POST(request) {
         `
         *,
         patient_records (
-          *,
-          profiles (
-            full_name,
-            role
-          )
+          *
         )
       `,
       )
